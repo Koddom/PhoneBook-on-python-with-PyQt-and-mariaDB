@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QGridLayout, QTableWidget, \
-    QTableWidgetItem, QLineEdit, QCheckBox, QDateEdit, QVBoxLayout, QMessageBox, QButtonGroup
+    QTableWidgetItem, QLineEdit, QCheckBox, QDateEdit, QVBoxLayout, QHBoxLayout, QMessageBox, QButtonGroup, QLabel
 from PyQt5.QtCore import QSize, Qt, QDate
 import sys
 import maria
@@ -14,7 +14,6 @@ class Window(QMainWindow):  # Стартовое окно с вводом лог
         self.username = QLineEdit(self)
         self.username.setPlaceholderText('Логин')
         self.username.setClearButtonEnabled(True)
-        self.username.setObjectName('Name')
 
         self.password = QLineEdit(self)
         self.password.setEchoMode(QLineEdit.Password)
@@ -73,7 +72,7 @@ class Window(QMainWindow):  # Стартовое окно с вводом лог
 
     def open_phonebook(self):
         if maria.check_pass(self.username.text(), self.password.text(),self.remember_me.isChecked()):
-            self.window = TableWindow()
+            self.window = TableWindow(self.username.text())
             self.window.show()
             self.close()
         else:
@@ -141,20 +140,20 @@ class RegistrationWindow(QMainWindow):
             self.open_phonebook()
 
     def open_phonebook(self):
-        self.window = TableWindow()
+        self.window = TableWindow(self.username.text())
         self.window.show()
         self.close()
 
 
     def back(self):
         print('вернуться назад')
-        self.window = Window()
+        self.window = Window(False)
         self.window.show()
         self.close()
 
 
 class TableWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, username):
         super(TableWindow, self).__init__()
 
         self.setMinimumSize(QSize(480, 600))
@@ -169,15 +168,20 @@ class TableWindow(QMainWindow):
         self.letters = ''  # хранит буквы активной кнопки, если букв нет, будет показан список ДР
         self.create_table()  # создание таблицы с выборкой из БД
 
+        self.user_exit_layout = QHBoxLayout()
+        current_user = QLabel("Вы вошли как " + username)
+        self.user_exit_layout.addWidget(current_user)
+
         btn = QPushButton(self)
         btn.setText('exit')
         btn.clicked.connect(self.logout)
-        self.grid_layout.addWidget(btn, 1, 0)
+        self.user_exit_layout.addWidget(btn)
+        self.grid_layout.addLayout(self.user_exit_layout, 1, 1)
 
-        btn_delete = QPushButton(self)
-        btn_delete.setText('-')
+        # btn_delete = QPushButton(self)
+        # btn_delete.setText('-')
         # btn.clicked.connect(self.delete_user)
-        self.grid_layout.addWidget(btn_delete, 1, 1)
+        # self.grid_layout.addWidget(btn_delete, 1, 0)
 
         self.buttons = []
         self.generate_alphas()
@@ -204,10 +208,10 @@ class TableWindow(QMainWindow):
     def create_table(self) -> None:
         """Формирует запрос в БД и заполняет таблицу данными выборки ФИО Телефон Дата"""
         self.table = QTableWidget(self)
-        if self.letters != '':
+        if self.letters != '':  # если кнопка с буквами была нажата получаем список по алфавиту
             selected = maria.get_list_of_people(self.letters)  # отправляем запрос в БД для получения выборки по буквам
             self.setWindowTitle('Телефонная книга')
-        else:
+        else:  # иначе формируется список пользователей с днями рождения на ближайшую дату
             selected = maria.get_list_of_birthday_people()
         rows = selected.__len__()
         columns = 4
