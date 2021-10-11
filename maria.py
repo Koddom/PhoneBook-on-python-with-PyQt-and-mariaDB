@@ -1,3 +1,18 @@
+"""
+Здесь прописаны все подключения к базе данных. Единственный класс CursorDB
+создаёт connection к mariaDB оладает свойством cursor для отправки запросов и манипуляции данными. Переключается на БД DATABASE
+Файл содержит функции:
+get_list_of_people(letters) - получает список людей по отбору по буквам.
+get_list_of_birthday_people() - получает список людей у которых ДР в ближайшие days
+check_pass(login, password, remember_me) - сравнивает данные введённые пользователем со значениями в БД.
+add_new_entry_to_phonebook_data(name, password, date) - записывает новые данные в БД таблицу phonebook_data
+check_dublicate() - Проверяет дубликаты
+update_entry() - изменяет существующие данные в БД таблицы phonebook_data
+autologin() - проверяет необходимость автоматичестого входа.  Считывает значение ID_user из таблицы autologin.
+create_db(username_db, password) - пытается подключиться к БД phonebook через 'localhost'
+c именем пользвателя username_db и паролем password. В случае успешного входа создаёт необходимые таблицы.
+first_connection() - Выполняется при каждом запуске программы для проверки существования БД.
+"""
 import mariadb
 import sys
 
@@ -41,10 +56,10 @@ def get_list_of_people(letters) -> list:
     return selected
 
 
-def get_list_of_birthday_people() -> list:
+def get_list_of_birthday_people(days=7) -> list:
     """Возвращает список пользователей, чьё ДР выпадает на ближайшую неделю"""
     sql = "SELECT Name,Phone,DateBir,UserID FROM phonebook_data WHERE DateBir BETWEEN CURRENT_DATE() AND ADDDATE(CURRENT_DATE(), INTERVAL ? DAY)"
-    data = (7,)
+    data = (days,)
     gate = CursorDB()
     gate.cursor.execute(sql, data)
     selected = gate.cursor.fetchall()
@@ -55,7 +70,7 @@ def get_list_of_birthday_people() -> list:
 
 
 def check_pass(login, password, remember_me) -> bool:
-    """Проверяет правильность пары логин-пароль"""
+    """Проверяет правильность пары логин-пароль. Возвращает access."""
     gate = CursorDB()
     gate.cursor.execute("SELECT Password,UserID FROM phonebook_data WHERE Name=?", (login,))
     user_password = gate.cursor.next()
@@ -110,7 +125,7 @@ def check_dublicate(cursor, row_data: tuple) -> bool:
         return True
 
 
-def update_entry(row_data, column) -> bool:
+def update_entry(row_data: int, column: int) -> bool:
     """Меняет поле Name в таблице базы данных"""
     gate = CursorDB()
     if check_dublicate(gate.cursor, row_data[:-1]): # если дубликатов не обнаружено
@@ -147,6 +162,14 @@ def autologin():
     gate.cursor.close()
 
     return login, password
+
+def delete_user_from_db(user_id) -> None:
+    gate = CursorDB()
+    sql = "DELETE FROM phonebook_data WHERE UserID = ?"
+    data = (user_id,)
+    gate.cursor.execute(sql, data)
+    gate.connection.commit()
+    gate.connection.close()
 
 
 def create_db(username_db, password):
@@ -198,8 +221,8 @@ def first_connection():
     """Функция для проверки подключения к базе данных"""
     while True:  # Просим пользователя ввести логин пароль, пока не введёт верный. break строка в операторе try
         print('Пытаемся подключится к базе данных. Введите логин и пароль от mariaDB')
-        username_db = input('Введите имя пользователя Базы Данных')
-        password = input('Пароль')
+        username_db = 'egordmitriev' # input('Введите имя пользователя Базы Данных')
+        password = '' #input('Пароль')
 
         conn_params = {
             'user': username_db,

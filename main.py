@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QGridLayout, QTableWidget, \
-    QTableWidgetItem, QLineEdit, QCheckBox, QDateEdit, QVBoxLayout, QHBoxLayout, QMessageBox, QButtonGroup, QLabel
+    QTableWidgetItem, QLineEdit, QCheckBox, QDateEdit, QVBoxLayout, QHBoxLayout, QMessageBox, QButtonGroup, QLabel,\
+    QDialogButtonBox, QInputDialog
 from PyQt5.QtCore import QSize, Qt, QDate
 import sys
 import maria
@@ -34,6 +35,11 @@ class Window(QMainWindow):  # Стартовое окно с вводом лог
         self.btn2.setFixedWidth(100)
         self.btn2.clicked.connect(self.exit)
 
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.btn)
+        buttons_layout.addWidget(self.btn1)
+        buttons_layout.addWidget(self.btn2)
+
         login, password = maria.autologin()
         self.remember_me = QCheckBox('Запомнить меня')
 
@@ -48,9 +54,7 @@ class Window(QMainWindow):  # Стартовое окно с вводом лог
         v_layout.addSpacing(1)
         v_layout.addWidget(self.username)
         v_layout.addWidget(self.password)
-        v_layout.addWidget(self.btn)
-        v_layout.addWidget(self.btn1)
-        v_layout.addWidget(self.btn2)
+        v_layout.addLayout(buttons_layout)
         v_layout.addWidget(self.remember_me)
         v_layout.addWidget(self.show_pass)
         central_widget.setLayout(v_layout)
@@ -168,20 +172,20 @@ class TableWindow(QMainWindow):
         self.letters = ''  # хранит буквы активной кнопки, если букв нет, будет показан список ДР
         self.create_table()  # создание таблицы с выборкой из БД
 
-        self.user_exit_layout = QHBoxLayout()
         current_user = QLabel("Вы вошли как " + username)
-        self.user_exit_layout.addWidget(current_user)
-
         btn = QPushButton(self)
         btn.setText('exit')
         btn.clicked.connect(self.logout)
+
+        self.user_exit_layout = QHBoxLayout()
+        self.user_exit_layout.addWidget(current_user)
         self.user_exit_layout.addWidget(btn)
         self.grid_layout.addLayout(self.user_exit_layout, 1, 1)
 
-        # btn_delete = QPushButton(self)
-        # btn_delete.setText('-')
-        # btn.clicked.connect(self.delete_user)
-        # self.grid_layout.addWidget(btn_delete, 1, 0)
+        btn_delete = QPushButton(self)
+        btn_delete.setText('-')
+        btn_delete.clicked.connect(self.delete_user)
+        self.grid_layout.addWidget(btn_delete, 1, 0)
 
         self.buttons = []
         self.generate_alphas()
@@ -191,6 +195,28 @@ class TableWindow(QMainWindow):
         for button in self.buttons:
             self.btn_grp.addButton(button)
         self.btn_grp.buttonClicked.connect(self.letters_click)
+
+    def delete_user(self):
+        row = self.table.currentRow()
+        yes_no = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel, self)
+        if row == -1:
+            # print('сначала выберите пользователя для удаления.')
+            msg = QMessageBox()
+            msg.setWindowTitle("Сообщение")
+            msg.setText("Cначала выберите пользователя из таблицы для удаления.")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()
+        else:
+            name_user = self.table.item(row, 0).text()
+            text, ok = QInputDialog.getText(self, 'Удаление!', 'Введите "'+name_user+'" для удаления.')
+            if ok:
+                user_id = self.table.item(row, 3).text()
+                if str(text) == name_user:
+                    maria.delete_user_from_db(user_id)
+                    self.create_table()
+            else:
+                print('Нажали канцел')
+
 
     def generate_alphas(self) -> None:
         letters = ['АБ','ВГ','ДЕ','ЖЗИЙ','КЛ','МН','ОП','РС','ТУ','ФХ','ЦЧШЩ','ЪЫЬЭ','ЮЯ']
@@ -232,8 +258,6 @@ class TableWindow(QMainWindow):
                 self.table.setItem(row, column, QTableWidgetItem(str(selected[row][column])))
 
         self.table.hideColumn(3)  # скрываем 4-ю колонку в которой хранится ID. Мы его будем использовать при изменении записи
-        # Делаем расайз колонок по содержимому
-        # self.table.resizeColumnsToContents()
 
         self.v_layout = QVBoxLayout()
         self.v_layout.setAlignment(Qt.AlignTop)
@@ -277,7 +301,7 @@ class TableWindow(QMainWindow):
 def main():
     maria.first_connection()  # проверяем подключение к базе
     app = QApplication(sys.argv)
-    window = Window(False)
+    window = Window(True)
     sys.exit(app.exec_())
 
 
