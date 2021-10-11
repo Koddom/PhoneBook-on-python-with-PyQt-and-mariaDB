@@ -63,6 +63,7 @@ class Window(QMainWindow):  # Стартовое окно с вводом лог
             # self.remember_me.setChecked(True)
             self.username.setText(login)
             self.password.setText(password)
+            self.remember_me.setChecked(True)
         if auto_login:
             self.open_phonebook()
         else:
@@ -217,7 +218,6 @@ class TableWindow(QMainWindow):
             else:
                 print('Нажали канцел')
 
-
     def generate_alphas(self) -> None:
         letters = ['АБ','ВГ','ДЕ','ЖЗИЙ','КЛ','МН','ОП','РС','ТУ','ФХ','ЦЧШЩ','ЪЫЬЭ','ЮЯ']
         for i in letters:
@@ -238,7 +238,7 @@ class TableWindow(QMainWindow):
             selected = maria.get_list_of_people(self.letters)  # отправляем запрос в БД для получения выборки по буквам
             self.setWindowTitle('Телефонная книга')
         else:  # иначе формируется список пользователей с днями рождения на ближайшую дату
-            selected = maria.get_list_of_birthday_people()
+            selected = maria.get_list_of_birthday_people(7)
         rows = selected.__len__()
         columns = 4
         self.table.setColumnCount(columns)
@@ -301,7 +301,7 @@ class TableWindow(QMainWindow):
 def main():
     maria.first_connection()  # проверяем подключение к базе
     app = QApplication(sys.argv)
-    window = Window(True)
+    window = Window(False)
     sys.exit(app.exec_())
 
 
