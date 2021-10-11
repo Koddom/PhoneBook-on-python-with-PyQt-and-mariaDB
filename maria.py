@@ -198,8 +198,8 @@ def first_connection():
     """Функция для проверки подключения к базе данных"""
     while True:  # Просим пользователя ввести логин пароль, пока не введёт верный. break строка в операторе try
         print('Пытаемся подключится к базе данных. Введите логин и пароль от mariaDB')
-        username_db = 'egordmitriev'
-        password = ''
+        username_db = input('Введите имя пользователя Базы Данных')
+        password = input('Пароль')
 
         conn_params = {
             'user': username_db,
