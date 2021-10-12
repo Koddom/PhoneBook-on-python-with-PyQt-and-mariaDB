@@ -78,14 +78,15 @@ def check_pass(login, password, remember_me) -> bool:
         access = False
     elif user_password[0] == password:  # если пароль в выборке совпадает с введённым пользователем
         access = True
-        if remember_me:
+        if remember_me:# Обновляем значение
             # Для начала удаляем все другие отметки Remember_me
-            gate.cursor.execute("UPDATE phonebook_data SET Remember_me=FALSE WHERE UserID IN( SELECT UserID FROM phonebook_data WHERE Remember_me=1)")
+            # gate.cursor.execute("UPDATE phonebook_data SET Remember_me=FALSE WHERE UserID IN( SELECT UserID FROM phonebook_data WHERE Remember_me=1)")
+            # gate.cursor.execute("UPDATE phonebook_data SET Remember_me=TRUE WHERE UserID=?", (user_password[1],))
             # записываем отметку запомнить меня для автоматического заполнения полей авторизации
-            gate.cursor.execute("UPDATE phonebook_data SET Remember_me=TRUE WHERE UserID=?", (user_password[1],))
+            gate.cursor.execute('INSERT INTO auto_login (UserID) VALUES (?)', (user_password[1],))
         else:
             # или удаляем
-            gate.cursor.execute("UPDATE phonebook_data SET Remember_me=False WHERE UserID=?", (user_password[1],))
+            gate.cursor.execute("DELETE FROM auto_login WHERE UserID=?", (user_password[1],)) ####!!!
         gate.connection.commit()
     else:  # иначе введён неправильный пароль
         access = False
@@ -194,13 +195,13 @@ def create_db(username_db, password):
     cursor.execute('CREATE DATABASE IF NOT EXISTS '+DATABASE)
     cursor.execute('USE '+DATABASE)
     print('База данных ' + DATABASE + ' создана')
-    cursor.execute('CREATE TABLE IF NOT EXISTS phonebook_data('  # создаём основную таблицу для хранения информации
-                        'UserID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,'
-                        'Name VARCHAR(150) NOT NULL,'
-                        'Password VARCHAR(100) NOT NULL DEFAULT "",'
-                        'Phone VARCHAR(11),'
-                        'DateBir DATE NOT NULL DEFAULT CURRENT_DATE(),'
-                        'Remember_me BOOL NOT NULL DEFAULT 0)')
+    # создаём основную таблицу для хранения информации
+    cursor.execute('CREATE TABLE IF NOT EXISTS phonebook_data('  
+                   'UserID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,'
+                   'Name VARCHAR(150) NOT NULL,'
+                   'Password VARCHAR(100) NOT NULL DEFAULT "",'
+                   'Phone VARCHAR(11),'
+                   'DateBir DATE NOT NULL DEFAULT CURRENT_DATE())')
     cursor.execute("CREATE TABLE IF NOT EXISTS auto_login("  # вспомогательная таблица хранит пользователя с галочкой remember me
                    "N INT NOT NULL PRIMARY KEY AUTO_INCREMENT,"
                    "UserID INT)")
@@ -221,8 +222,8 @@ def first_connection():
     """Функция для проверки подключения к базе данных"""
     while True:  # Просим пользователя ввести логин пароль, пока не введёт верный. break строка в операторе try
         print('Пытаемся подключится к базе данных. Введите логин и пароль от mariaDB')
-        username_db = 'egordmitriev' # input('Введите имя пользователя Базы Данных')
-        password = '' #input('Пароль')
+        username_db = input('Введите имя пользователя Базы Данных: ')  #  'egordmitriev' #
+        password = input('Пароль: ') # '' #
 
         conn_params = {
             'user': username_db,
